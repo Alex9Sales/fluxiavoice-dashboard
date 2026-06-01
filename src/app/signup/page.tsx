@@ -58,13 +58,14 @@ export default function SignupPage() {
         <div className="w-full max-w-sm">
           <div className="space-y-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-              Onboarding — franqueado
+              Onboarding · ou recuperar senha
             </p>
             <h2 className="font-display text-4xl tracking-[-0.025em] leading-tight">
-              Bem-vindo(a) à <span className="italic">Fluxia</span>.
+              Defina sua <span className="italic">senha</span>.
             </h2>
             <p className="text-sm text-muted-foreground">
-              Cadastre sua senha. Se o e-mail já existir, atualizamos.
+              Cadastre a senha do franqueado. <strong>Se o e-mail já existir, atualizamos
+              a senha</strong> — é o jeito de recuperar se esqueceu.
             </p>
           </div>
 

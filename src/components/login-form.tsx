@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, ArrowRight, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Loader2, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export function LoginForm({
   callbackUrl,
@@ -17,6 +18,7 @@ export function LoginForm({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState<string | null>(
     initialError === "CredentialsSignin" ? "E-mail ou senha incorretos." : null
   );
@@ -60,16 +62,38 @@ export function LoginForm({
         />
       </FieldShell>
 
-      <FieldShell label="Senha" htmlFor="password">
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          placeholder="••••••••"
-          className="h-11 border-0 bg-transparent px-0 text-[15px] shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
-        />
+      <FieldShell
+        label="Senha"
+        htmlFor="password"
+        rightSlot={
+          <Link
+            href="/signup"
+            className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Esqueci
+          </Link>
+        }
+      >
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPwd ? "text" : "password"}
+            required
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className="h-11 border-0 bg-transparent px-0 pr-9 text-[15px] shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPwd((s) => !s)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={showPwd ? "Esconder senha" : "Mostrar senha"}
+            tabIndex={-1}
+          >
+            {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </FieldShell>
 
       {error && (
@@ -103,20 +127,25 @@ export function LoginForm({
 function FieldShell({
   label,
   htmlFor,
+  rightSlot,
   children,
 }: {
   label: string;
   htmlFor: string;
+  rightSlot?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="group relative border-b border-border pb-1 focus-within:border-foreground transition-colors">
-      <Label
-        htmlFor={htmlFor}
-        className="block font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
-      >
-        {label}
-      </Label>
+      <div className="flex items-center justify-between">
+        <Label
+          htmlFor={htmlFor}
+          className="block font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
+        >
+          {label}
+        </Label>
+        {rightSlot}
+      </div>
       {children}
     </div>
   );

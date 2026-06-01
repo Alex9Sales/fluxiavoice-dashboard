@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight, AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 export function SignupForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -67,16 +68,27 @@ export function SignupForm() {
       </FieldShell>
 
       <FieldShell label="Senha — mínimo 6 caracteres" htmlFor="password">
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={6}
-          autoComplete="new-password"
-          placeholder="••••••••"
-          className="h-11 border-0 bg-transparent px-0 text-[15px] shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPwd ? "text" : "password"}
+            required
+            minLength={6}
+            autoComplete="new-password"
+            placeholder="••••••••"
+            className="h-11 border-0 bg-transparent px-0 pr-9 text-[15px] shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPwd((s) => !s)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={showPwd ? "Esconder senha" : "Mostrar senha"}
+            tabIndex={-1}
+          >
+            {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </FieldShell>
 
       {error && (

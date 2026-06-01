@@ -10,6 +10,8 @@ const credentialsSchema = z.object({
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Coolify/Caddy proxy → confiar no host configurado em NEXTAUTH_URL
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
