@@ -3,17 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { refreshAccessToken } from "@/lib/google";
 
 /**
- * Endpoint INTERNO — consultado pelo n8n na hora de agendar reunião.
+ * Endpoint INTERNO consultado pelo n8n na hora de agendar reunião.
  *
- * Recebe o lead_id (vindo da tool agendar_reuniao do Retell), descobre a campanha →
- * franqueado, troca o refresh_token salvo por access_token fresco, retorna pro n8n.
- *
- * Protegido por header `x-internal-key` = INTERNAL_API_KEY.
+ * Fluxo:
+ *  1. n8n manda lead_id ou franqueado_id
+ *  2. Buscamos o franqueado dono daquele lead
+ *  3. Se ele conectou Google → retorna access_token + calendar dele
+ *  4. Se NÃO conectou → cai pro admin do sistema (franqueado #1) como fallback
+ *  5. Se nem admin conectou → 503 (precisa alguém conectar)
  *
  * Resposta:
- *  - Conectado: { access_token, calendar_id, email }
- *  - Não conectado: { access_token: null, calendar_id: null, fallback: true }
- *    (n8n usa a credencial Alex padrão como fallback)
+ *  {
+ *    access_token: "...",
+ *    calendar_id: "email@gmail.com",
+ *    email: "...",
+ *    franqueado_id: 1,
+ *    used_fallback: false
+ *  }
+ *
+ * Proteção: header `x-internal-key` deve bater com env INTERNAL_API_KEY.
  */
 export async function POST(req: Request) {
   const internalKey = req.headers.get("x-internal-key");
@@ -40,34 +48,62 @@ export async function POST(req: Request) {
   }
 
   if (!franqueadoId) {
-    return NextResponse.json({ error: "Franqueado não encontrado" }, { status: 404 });
+    return NextResponse.json({ error: "Franqueado não identificado" }, { status: 404 });
   }
 
-  const f = await prisma.franqueado.findUnique({ where: { id: franqueadoId } });
-  if (!f || !f.googleRefreshToken) {
-    return NextResponse.json({
-      access_token: null,
-      calendar_id: null,
-      email: null,
-      fallback: true,
-      reason: "Franqueado não conectou Google Calendar — n8n usa fallback",
-    });
+  // Tenta o franqueado dono do lead
+  const franqueado = await prisma.franqueado.findUnique({ where: { id: franqueadoId } });
+
+  if (franqueado?.googleRefreshToken) {
+    try {
+      const tokens = await refreshAccessToken(franqueado.googleRefreshToken);
+      return NextResponse.json({
+        access_token: tokens.access_token,
+        expires_in: tokens.expires_in,
+        calendar_id: franqueado.googleCalendarId || franqueado.googleEmail || "primary",
+        email: franqueado.googleEmail,
+        franqueado_id: franqueadoId,
+        used_fallback: false,
+      });
+    } catch (e) {
+      console.error("[google-token] refresh falhou pro franqueado:", e);
+      // segue pro fallback
+    }
+  }
+
+  // Fallback: usa o admin do sistema (franqueado_id=1 = Alex Sanabria)
+  const admin = await prisma.franqueado.findFirst({
+    where: { googleRefreshToken: { not: null } },
+    orderBy: { id: "asc" },
+  });
+
+  if (!admin || !admin.googleRefreshToken) {
+    return NextResponse.json(
+      {
+        error: "Nenhuma conta Google conectada no sistema",
+        hint: "Conecte Google Calendar em /dashboard/calendario",
+      },
+      { status: 503 }
+    );
   }
 
   try {
-    const tokens = await refreshAccessToken(f.googleRefreshToken);
+    const tokens = await refreshAccessToken(admin.googleRefreshToken);
     return NextResponse.json({
       access_token: tokens.access_token,
       expires_in: tokens.expires_in,
-      calendar_id: f.googleCalendarId || f.googleEmail || "primary",
-      email: f.googleEmail,
-      fallback: false,
+      calendar_id: admin.googleCalendarId || admin.googleEmail || "primary",
+      email: admin.googleEmail,
+      franqueado_id: franqueadoId,
+      used_fallback: true,
+      fallback_reason: franqueado?.googleRefreshToken
+        ? "Token do franqueado expirou"
+        : "Franqueado não conectou Google Calendar",
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro";
-    console.error("[internal google-token] refresh falhou:", msg);
     return NextResponse.json(
-      { error: "Refresh falhou", details: msg, fallback: true },
+      { error: "Refresh do admin falhou", details: msg },
       { status: 502 }
     );
   }
