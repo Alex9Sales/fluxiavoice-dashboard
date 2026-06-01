@@ -2,21 +2,25 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+  // req.auth pode ser um objeto vazio em alguns casos — checar user.id é mais seguro
+  const isLoggedIn = !!req.auth?.user?.id;
   const { pathname } = req.nextUrl;
 
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/api/auth");
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/signup");
 
+  // Rotas privadas sem sessão → redireciona pro login
   if (!isLoggedIn && !isPublic) {
     const loginUrl = new URL("/login", req.nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isLoggedIn && pathname.startsWith("/login")) {
+  // Logado tentando ir pro /login ou /signup → manda pro dashboard
+  if (isLoggedIn && (pathname.startsWith("/login") || pathname.startsWith("/signup"))) {
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
   }
 
