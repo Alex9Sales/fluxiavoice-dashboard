@@ -200,11 +200,11 @@ export function AgenteForm({ initial, vozes }: AgenteFormProps) {
               </p>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                 Em breve você sobe uns 3 minutos de áudio gravado e a gente clona sua voz pra IA.
-                Por enquanto, se quiser fazer agora, é manual via ElevenLabs e nós cadastramos pra
-                você.
+                Por enquanto, se quiser fazer agora, fale com o suporte — ativamos manualmente
+                pra você.
               </p>
-              <p className="text-xs text-muted-foreground mt-2 font-mono">
-                Custo estimado: ElevenLabs Creator US$ 22/mês (compartilhado, até 30 vozes).
+              <p className="text-xs text-muted-foreground mt-2">
+                Disponível como add-on do plano. <span className="italic">Em breve</span>.
               </p>
             </div>
           </div>
