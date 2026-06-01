@@ -1,0 +1,121 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["fluxia"]
+}
+
+model Franqueado {
+  id        Int        @id @default(autoincrement())
+  nome      String     @db.VarChar(255)
+  email     String     @unique @db.VarChar(255)
+  senhaHash String?    @map("senha_hash") @db.VarChar(255)
+  telefone  String?    @db.VarChar(50)
+  cidade    String?    @db.VarChar(100)
+  uf        String?    @db.VarChar(2)
+  segmento  String?    @db.VarChar(100)
+  ativo     Boolean?   @default(true)
+  createdAt DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime?  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  campanhas Campanha[]
+
+  @@map("franqueados")
+  @@schema("fluxia")
+}
+
+model Campanha {
+  id                       Int         @id @default(autoincrement())
+  franqueadoId             Int?        @map("franqueado_id")
+  nome                     String      @db.VarChar(255)
+  tipo                     String?     @default("agendamento") @db.VarChar(50)
+  retellAgentId            String?     @map("retell_agent_id") @db.VarChar(100)
+  promptCustomizado        String?     @map("prompt_customizado")
+  ativa                    Boolean?    @default(true)
+  horarioInicio            DateTime?   @default(dbgenerated("'09:00:00'::time without time zone")) @map("horario_inicio") @db.Time(6)
+  horarioFim               DateTime?   @default(dbgenerated("'18:00:00'::time without time zone")) @map("horario_fim") @db.Time(6)
+  diasSemana               Int[]       @default([1, 2, 3, 4, 5]) @map("dias_semana")
+  maxTentativas            Int?        @default(3) @map("max_tentativas")
+  intervaloTentativasHoras Int?        @default(24) @map("intervalo_tentativas_horas")
+  createdAt                DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+  nomeIa                   String?     @default("Marina") @map("nome_ia") @db.VarChar(50)
+  retellVoiceId            String?     @map("retell_voice_id") @db.VarChar(100)
+  retellLlmId              String?     @map("retell_llm_id") @db.VarChar(100)
+  franqueado               Franqueado? @relation(fields: [franqueadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  leads                    Lead[]
+
+  @@map("campanhas")
+  @@schema("fluxia")
+}
+
+model Lead {
+  id                 Int           @id @default(autoincrement())
+  campanhaId         Int?          @map("campanha_id")
+  nome               String        @db.VarChar(255)
+  telefone           String        @db.VarChar(50)
+  grauProximidade    String?       @map("grau_proximidade") @db.VarChar(10)
+  veioDeRecomendacao Boolean?      @default(false) @map("veio_de_recomendacao")
+  quemRecomendou     String?       @map("quem_recomendou") @db.VarChar(255)
+  status             String?       @default("pendente") @db.VarChar(50)
+  tentativas         Int?          @default(0)
+  ultimaTentativa    DateTime?     @map("ultima_tentativa") @db.Timestamp(6)
+  proximaTentativa   DateTime?     @map("proxima_tentativa") @db.Timestamp(6)
+  observacoes        String?
+  metadata           Json?
+  createdAt          DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  agendamentos       Agendamento[]
+  campanha           Campanha?     @relation(fields: [campanhaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ligacoes           Ligacao[]
+
+  @@index([campanhaId, status], map: "idx_leads_campanha_status")
+  @@index([proximaTentativa], map: "idx_leads_proxima")
+  @@map("leads")
+  @@schema("fluxia")
+}
+
+model Ligacao {
+  id                  Int           @id @default(autoincrement())
+  leadId              Int?          @map("lead_id")
+  retellCallId        String?       @unique @map("retell_call_id") @db.VarChar(100)
+  iniciadaEm          DateTime?     @map("iniciada_em") @db.Timestamp(6)
+  finalizadaEm        DateTime?     @map("finalizada_em") @db.Timestamp(6)
+  duracaoSegundos     Int?          @map("duracao_segundos")
+  callStatus          String?       @map("call_status") @db.VarChar(50)
+  disconnectionReason String?       @map("disconnection_reason") @db.VarChar(100)
+  resultado           String?       @db.VarChar(50)
+  resumo              String?
+  transcricao         String?
+  urlGravacao         String?       @map("url_gravacao")
+  custoCentavos       Int?          @map("custo_centavos")
+  rawData             Json?         @map("raw_data")
+  createdAt           DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
+  agendamentos        Agendamento[]
+  lead                Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([leadId], map: "idx_ligacoes_lead")
+  @@index([retellCallId], map: "idx_ligacoes_retell")
+  @@map("ligacoes")
+  @@schema("fluxia")
+}
+
+model Agendamento {
+  id             Int       @id @default(autoincrement())
+  leadId         Int?      @map("lead_id")
+  ligacaoId      Int?      @map("ligacao_id")
+  googleEventId  String?   @map("google_event_id") @db.VarChar(255)
+  dataReuniao    DateTime? @map("data_reuniao") @db.Timestamp(6)
+  duracaoMinutos Int?      @default(30) @map("duracao_minutos")
+  titulo         String?   @db.VarChar(255)
+  observacoes    String?
+  status         String?   @default("confirmado") @db.VarChar(50)
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  lead           Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ligacao        Ligacao?  @relation(fields: [ligacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("agendamentos")
+  @@schema("fluxia")
+}
