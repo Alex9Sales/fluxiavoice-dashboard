@@ -10,18 +10,22 @@ datasource db {
 }
 
 model Franqueado {
-  id        Int        @id @default(autoincrement())
-  nome      String     @db.VarChar(255)
-  email     String     @unique @db.VarChar(255)
-  senhaHash String?    @map("senha_hash") @db.VarChar(255)
-  telefone  String?    @db.VarChar(50)
-  cidade    String?    @db.VarChar(100)
-  uf        String?    @db.VarChar(2)
-  segmento  String?    @db.VarChar(100)
-  ativo     Boolean?   @default(true)
-  createdAt DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime?  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
-  campanhas Campanha[]
+  id                   Int        @id @default(autoincrement())
+  nome                 String     @db.VarChar(255)
+  email                String     @unique @db.VarChar(255)
+  senhaHash            String?    @map("senha_hash") @db.VarChar(255)
+  telefone             String?    @db.VarChar(50)
+  cidade               String?    @db.VarChar(100)
+  uf                   String?    @db.VarChar(2)
+  segmento             String?    @db.VarChar(100)
+  ativo                Boolean?   @default(true)
+  createdAt            DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime?  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  googleEmail          String?    @map("google_email") @db.VarChar(255)
+  googleRefreshToken   String?    @map("google_refresh_token")
+  googleCalendarId     String?    @map("google_calendar_id") @db.VarChar(255)
+  googleConnectedAt    DateTime?  @map("google_connected_at") @db.Timestamp(6)
+  campanhas            Campanha[]
 
   @@map("franqueados")
   @@schema("fluxia")

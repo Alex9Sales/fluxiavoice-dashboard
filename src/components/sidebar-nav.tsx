@@ -44,6 +44,7 @@ const groups: Group[] = [
     label: "Configuração",
     items: [
       { href: "/dashboard/agente", label: "Meu agente", icon: Sparkles },
+      { href: "/dashboard/calendario", label: "Calendário", icon: Calendar },
       { href: "/dashboard/campanhas", label: "Campanhas", icon: Megaphone },
     ],
   },
