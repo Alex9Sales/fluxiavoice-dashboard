@@ -10,7 +10,11 @@ export default auth((req) => {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/signup");
+    pathname.startsWith("/api/signup") ||
+    // Endpoints server-to-server (n8n consulta): protegidos pelo header x-internal-key
+    pathname.startsWith("/api/internal") ||
+    // Callbacks externos (Retell webhooks, Google OAuth callback): sem sessão
+    pathname.startsWith("/api/retell-webhook");
 
   // Rotas privadas sem sessão → redireciona pro login
   if (!isLoggedIn && !isPublic) {
